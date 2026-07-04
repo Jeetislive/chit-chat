@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     const data = await authApi.login({ username, password });
     localStorage.setItem("token", data.token!);
+    if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("user", JSON.stringify(data));
     setUser(data);
     return data;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = useCallback(async (body: Record<string, string>) => {
     const data = await authApi.signup(body);
     localStorage.setItem("token", data.token!);
+    if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("user", JSON.stringify(data));
     setUser(data);
     return data;
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try { await authApi.logout(); } catch {}
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     setUser(null);
   }, []);

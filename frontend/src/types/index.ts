@@ -8,6 +8,7 @@ export interface User {
   profilePic?: string;
   fullName?: string;
   token?: string;
+  refreshToken?: string;
   createdAt?: string;
 }
 

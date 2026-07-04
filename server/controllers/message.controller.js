@@ -1,8 +1,9 @@
 import * as messageService from "../services/message.service.js";
 import { getIO, getReceiverSocketId } from "../socket/socket.js";
 import Message from "../model/messageSchema.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export async function sendMessage(req, res) {
+export const sendMessage = asyncHandler(async (req, res) => {
     const { id: receiverId } = req.params;
     const { message, replyTo } = req.body;
 
@@ -19,18 +20,18 @@ export async function sendMessage(req, res) {
     }
 
     res.status(201).json({ newMessage: messageObj });
-}
+});
 
-export async function getConversationMessages(req, res) {
+export const getConversationMessages = asyncHandler(async (req, res) => {
     const { id: userToChatId } = req.params;
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
 
     const result = await messageService.getConversationMessages(req.user._id, userToChatId, page, limit);
     res.json(result);
-}
+});
 
-export async function deleteMessage(req, res) {
+export const deleteMessage = asyncHandler(async (req, res) => {
     const { messageId } = req.params;
     const deleted = await messageService.deleteMessage(messageId, req.user._id);
 
@@ -48,4 +49,4 @@ export async function deleteMessage(req, res) {
     }
 
     res.json({ message: "Message deleted" });
-}
+});

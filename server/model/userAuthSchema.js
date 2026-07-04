@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    resetCode: {
+        type: String,
+        default: null,
+    },
+    resetCodeExpiry: {
+        type: Date,
+        default: null,
+    },
     
 },{timestamps: true});
 

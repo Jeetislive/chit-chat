@@ -1,7 +1,21 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import User from "../model/userAuthSchema.js";
-import { generateToken } from "../utils/generateToken.js";
-import { UnauthorizedError, ValidationError } from "../errors/AppError.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js";
+import { UnauthorizedError, ValidationError, NotFoundError } from "../errors/AppError.js";
+import { sendWelcomeEmail, sendResetCodeEmail } from "./email.service.js";
+
+function buildUserResponse(user) {
+    return {
+        token: generateAccessToken(user._id),
+        refreshToken: generateRefreshToken(user._id),
+        _id: user._id,
+        fullName: user.name,
+        username: user.username,
+        profilePic: user.profilePic,
+    };
+}
 
 export async function signup(data) {
     const existing = await User.findOne({ username: data.username });
@@ -19,15 +33,10 @@ export async function signup(data) {
     });
 
     await newUser.save();
-    const token = generateToken(newUser._id);
 
-    return {
-        token,
-        _id: newUser._id,
-        fullName: newUser.name,
-        username: newUser.username,
-        profilePic: newUser.profilePic,
-    };
+    sendWelcomeEmail(data.email, data.name);
+
+    return buildUserResponse(newUser);
 }
 
 export async function login(username, password) {
@@ -37,15 +46,24 @@ export async function login(username, password) {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new UnauthorizedError("Invalid credentials");
 
-    const token = generateToken(user._id);
+    return buildUserResponse(user);
+}
 
-    return {
-        token,
-        _id: user._id,
-        fullName: user.name,
-        username: user.username,
-        profilePic: user.profilePic,
-    };
+export async function refreshAccessToken(refreshToken) {
+    if (!refreshToken) throw new UnauthorizedError("Refresh token required");
+
+    const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+    let decoded;
+    try {
+        decoded = jwt.verify(refreshToken, secret);
+    } catch {
+        throw new UnauthorizedError("Invalid or expired refresh token");
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user) throw new UnauthorizedError("User not found");
+
+    return { token: generateAccessToken(user._id) };
 }
 
 export async function getProfile(userId) {
@@ -65,4 +83,38 @@ export async function updateProfile(userId, data) {
 
     await user.save();
     return user;
+}
+
+export async function forgotPassword(email) {
+    const user = await User.findOne({ email });
+    if (!user) throw new NotFoundError("No account found with this email");
+
+    const code = crypto.randomInt(100000, 999999).toString();
+    user.resetCode = code;
+    user.resetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    await sendResetCodeEmail(email, user.name, code);
+}
+
+export async function verifyResetCode(email, code) {
+    const user = await User.findOne({ email });
+    if (!user) throw new NotFoundError("No account found with this email");
+    if (!user.resetCode || !user.resetCodeExpiry) throw new ValidationError("No reset code requested");
+    if (user.resetCode !== code) throw new ValidationError("Invalid reset code");
+    if (Date.now() > user.resetCodeExpiry.getTime()) throw new ValidationError("Reset code has expired");
+}
+
+export async function resetPassword(email, code, newPassword) {
+    const user = await User.findOne({ email });
+    if (!user) throw new NotFoundError("No account found with this email");
+    if (!user.resetCode || !user.resetCodeExpiry) throw new ValidationError("No reset code requested");
+    if (user.resetCode !== code) throw new ValidationError("Invalid reset code");
+    if (Date.now() > user.resetCodeExpiry.getTime()) throw new ValidationError("Reset code has expired");
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetCode = null;
+    user.resetCodeExpiry = null;
+    await user.save();
 }
