@@ -138,13 +138,13 @@ function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete,
                   {replyMsg && (
                     <div className="mb-1.5 pl-2 border-l-2 border-white/20 text-xs text-gray-400">
                       <p className="font-medium text-indigo-400">Replying</p>
-                      <p className="truncate max-w-[200px]">{replyMsg.isDeleted ? "This message was deleted" : replyMsg.message}</p>
+                      <p className="truncate max-w-[200px]">{replyMsg.isDeleted ? "This message was deleted" : replyMsg.content}</p>
                     </div>
                   )}
                   {msg.isDeleted ? (
                     <p className="text-sm italic text-gray-500">This message was deleted</p>
                   ) : (
-                    <p className="text-sm leading-relaxed">{msg.message}</p>
+                    <p className="text-sm leading-relaxed">{msg.content}</p>
                   )}
                   {!msg.isDeleted && (
                     <div className={`flex items-center justify-end gap-0.5 mt-1 ${isMine ? "text-white/60" : "text-gray-500"}`}>

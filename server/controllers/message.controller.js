@@ -5,9 +5,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const sendMessage = asyncHandler(async (req, res) => {
     const { id: receiverId } = req.params;
-    const { message, replyTo } = req.body;
+    const { content, replyTo, encrypted, nonce } = req.body;
 
-    const newMessage = await messageService.sendMessage(req.user._id, receiverId, message, replyTo);
+    const newMessage = await messageService.sendMessage(req.user._id, receiverId, content, replyTo, encrypted || false, nonce || null);
 
     const io = getIO();
     const receiverSocketId = getReceiverSocketId(receiverId);

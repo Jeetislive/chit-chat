@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { authApi } from "@/lib/api";
+import { authApi, userApi } from "@/lib/api";
+import { generateAndStoreKeyPair, getMyPublicKey, clearKeys } from "@/lib/crypto";
 import type { User, AuthContextValue } from "@/types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -19,29 +20,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  const ensurePublicKeySaved = useCallback(async () => {
+    const pub = getMyPublicKey();
+    if (!pub) {
+      generateAndStoreKeyPair();
+    }
+    const newPub = getMyPublicKey();
+    if (newPub) {
+      try { await userApi.savePublicKey(newPub); } catch { /* server down */ }
+    }
+  }, []);
+
   const login = useCallback(async (username: string, password: string) => {
     const data = await authApi.login({ username, password });
     localStorage.setItem("token", data.token!);
     if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("user", JSON.stringify(data));
+    await ensurePublicKeySaved();
     setUser(data);
     return data;
-  }, []);
+  }, [ensurePublicKeySaved]);
 
   const signup = useCallback(async (body: Record<string, string>) => {
     const data = await authApi.signup(body);
     localStorage.setItem("token", data.token!);
     if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("user", JSON.stringify(data));
+    await ensurePublicKeySaved();
     setUser(data);
     return data;
-  }, []);
+  }, [ensurePublicKeySaved]);
 
   const logout = useCallback(async () => {
     try { await authApi.logout(); } catch {}
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    clearKeys();
     setUser(null);
   }, []);
 

@@ -2,7 +2,7 @@ import Conversation from "../model/conversationSchema.js";
 import Message from "../model/messageSchema.js";
 import { NotFoundError } from "../errors/AppError.js";
 
-export async function sendMessage(senderId, receiverId, messageText, replyToId) {
+export async function sendMessage(senderId, receiverId, content, replyToId, encrypted = false, nonce = null) {
     let conversation = await Conversation.findOne({
         participants: { $all: [senderId, receiverId] },
     });
@@ -14,7 +14,9 @@ export async function sendMessage(senderId, receiverId, messageText, replyToId) 
     const newMessage = new Message({
         sender: senderId,
         receiver: receiverId,
-        message: messageText,
+        content,
+        encrypted,
+        nonce,
         replyTo: replyToId || null,
     });
 

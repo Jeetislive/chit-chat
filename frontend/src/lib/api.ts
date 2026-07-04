@@ -91,6 +91,8 @@ export const authApi = {
 export const userApi = {
   getUsers: () => request<User[]>("/users"),
   getUserProfile: (id: string) => request<User>(`/users/${id}`),
+  savePublicKey: (publicKey: string) => request<{ message: string }>("/users/public-key", { method: "PUT", body: JSON.stringify({ publicKey }) }),
+  getPublicKey: (userId: string) => request<{ publicKey: string }>(`/users/public-key/${userId}`),
 };
 
 export const conversationApi = {
@@ -100,8 +102,8 @@ export const conversationApi = {
 export const messageApi = {
   getConversation: (userId: string, page = 1, limit = 50) =>
     request<MessagesResponse>(`/messages/${userId}?page=${page}&limit=${limit}`),
-  sendMessage: (userId: string, message: string, replyTo?: string) =>
-    request<SendMessageResponse>(`/messages/send/${userId}`, { method: "POST", body: JSON.stringify({ message, replyTo }) }),
+  sendMessage: (userId: string, body: { content: string; nonce?: string; encrypted?: boolean; replyTo?: string }) =>
+    request<SendMessageResponse>(`/messages/send/${userId}`, { method: "POST", body: JSON.stringify(body) }),
   deleteMessage: (messageId: string) =>
     request<void>(`/messages/${messageId}`, { method: "DELETE" }),
 };

@@ -21,6 +21,7 @@
   --scrollbar-color: rgba(255, 255, 255, 0.15);
   --bubble-received-bg: rgba(255, 255, 255, 0.08);
   --bubble-received-border: rgba(255, 255, 255, 0.06);
+  --badge-bg: #6366f1;
   --bg-gradient-1: #0a0a1a;
   --bg-gradient-2: #1a1a3e;
   --bg-gradient-3: #0d0d2b;
@@ -47,6 +48,7 @@
   --scrollbar-color: rgba(0, 0, 0, 0.15);
   --bubble-received-bg: rgba(0, 0, 0, 0.04);
   --bubble-received-border: rgba(0, 0, 0, 0.06);
+  --badge-bg: #22c55e;
   --bg-gradient-1: #dce0e8;
   --bg-gradient-2: #e4e8f0;
   --bg-gradient-3: #e0e4ec;

@@ -15,7 +15,7 @@ export async function getConversations(userId) {
         })
             .sort({ createdAt: -1 })
             .limit(1)
-            .select("message createdAt")
+            .select("content createdAt encrypted")
             .lean();
 
         const unreadCount = await Message.countDocuments({
@@ -32,7 +32,7 @@ export async function getConversations(userId) {
                 profilePic: otherUser.profilePic,
             },
             lastMessage: lastMessage
-                ? { message: lastMessage.message, createdAt: lastMessage.createdAt }
+                ? { content: lastMessage.encrypted ? "" : (lastMessage.content || ""), createdAt: lastMessage.createdAt }
                 : null,
             unreadCount,
         };
