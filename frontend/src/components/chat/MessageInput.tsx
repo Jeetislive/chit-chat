@@ -44,7 +44,7 @@ function MessageInput({ onSend, onTyping, disabled = false, replyTo, onCancelRep
           <div className="w-0.5 h-8 bg-indigo-400 shrink-0 rounded-full" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-indigo-400 font-medium">Replying</p>
-            <p className="text-xs text-gray-400 truncate">{replyTo.message}</p>
+            <p className="text-xs text-gray-400 truncate">{replyTo.content}</p>
           </div>
           <button
             onClick={onCancelReply}

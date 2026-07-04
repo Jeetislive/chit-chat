@@ -38,7 +38,12 @@ export function useConversations(selectedUser: User | null) {
         const updated = prev[idx];
         const newConv: Conversation = {
           ...updated,
-          lastMessage: { message: msg.isDeleted ? "This message was deleted" : msg.message, createdAt: msg.createdAt },
+          lastMessage: {
+            content: msg.isDeleted
+              ? "This message was deleted"
+              : (msg.encrypted ? "" : (msg.content || "")),
+            createdAt: msg.createdAt,
+          },
           unreadCount: isForSelected ? 0 : updated.unreadCount + 1,
         };
 
@@ -63,7 +68,7 @@ export function useConversations(selectedUser: User | null) {
       setConversations((prev) =>
         prev.map((c) =>
           c.user._id === otherId && c.lastMessage
-            ? { ...c, lastMessage: { ...c.lastMessage, message: "This message was deleted" } }
+            ? { ...c, lastMessage: { ...c.lastMessage, content: "This message was deleted" } }
             : c
         )
       );

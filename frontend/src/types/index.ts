@@ -10,13 +10,16 @@ export interface User {
   token?: string;
   refreshToken?: string;
   createdAt?: string;
+  publicKey?: string;
 }
 
 export interface Message {
   _id: string;
   sender: string;
   receiver: string;
-  message: string;
+  content: string;
+  encrypted?: boolean;
+  nonce?: string;
   status: "sent" | "delivered" | "read";
   createdAt: string;
   replyTo?: Message | string | null;
@@ -31,7 +34,7 @@ export interface ConversationUser {
 }
 
 export interface LastMessage {
-  message: string;
+  content: string;
   createdAt: string;
 }
 
