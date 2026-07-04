@@ -1,11 +1,12 @@
 import * as userService from "../services/user.service.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export async function getUsers(req, res) {
+export const getUsers = asyncHandler(async (req, res) => {
     const users = await userService.getUsersForSidebar(req.user._id);
     res.json(users);
-}
+});
 
-export async function getUserProfile(req, res) {
+export const getUserProfile = asyncHandler(async (req, res) => {
     const user = await userService.getUserProfile(req.params.id);
     res.json(user);
-}
+});

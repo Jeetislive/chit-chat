@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import GuestOnlyRoute from "@/components/auth/GuestOnlyRoute";
 
 interface SignupForm {
   name: string;
@@ -48,6 +49,7 @@ export default function SignupPage() {
   };
 
   return (
+    <GuestOnlyRoute>
     <div className="animated-bg flex min-h-screen items-center justify-center px-4 py-8 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-purple-500/20 blur-[100px]" />
@@ -147,5 +149,6 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+    </GuestOnlyRoute>
   );
 }

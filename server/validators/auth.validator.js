@@ -24,3 +24,18 @@ export const updateProfileSchema = z.object({
     phone: z.string().optional(),
     gender: z.enum(["male", "female"]).optional(),
 });
+
+export const forgotPasswordSchema = z.object({
+    email: z.string().email("Invalid email"),
+});
+
+export const verifyResetCodeSchema = z.object({
+    email: z.string().email("Invalid email"),
+    code: z.string().length(6, "Code must be 6 digits"),
+});
+
+export const resetPasswordSchema = z.object({
+    email: z.string().email("Invalid email"),
+    code: z.string().length(6, "Code must be 6 digits"),
+    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});

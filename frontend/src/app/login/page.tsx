@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import GuestOnlyRoute from "@/components/auth/GuestOnlyRoute";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -28,6 +29,7 @@ export default function LoginPage() {
   };
 
   return (
+    <GuestOnlyRoute>
     <div className="animated-bg flex min-h-screen items-center justify-center px-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-indigo-500/20 blur-[100px]" />
@@ -99,6 +101,12 @@ export default function LoginPage() {
                 </span>
               ) : "Sign In"}
             </button>
+
+            <div className="text-center">
+              <Link href="/forgot-password" className="text-xs text-gray-500 hover:text-indigo-400 transition">
+                Forgot Password?
+              </Link>
+            </div>
           </form>
 
           <p className="text-center text-gray-400 text-sm mt-6">
@@ -110,5 +118,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </GuestOnlyRoute>
   );
 }

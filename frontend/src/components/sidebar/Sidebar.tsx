@@ -54,7 +54,7 @@ function Sidebar({ selectedUser, onSelectUser }: SidebarProps) {
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="text-gray-500 hover:text-indigo-400 transition shrink-0"
+              className="cursor-pointer text-gray-500 hover:text-indigo-400 transition shrink-0"
             >
               {theme === "dark" ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,7 +69,7 @@ function Sidebar({ selectedUser, onSelectUser }: SidebarProps) {
             <button
               onClick={logout}
               aria-label="Logout"
-              className="text-[11px] text-gray-500 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg bg-glass hover:bg-glass-hover"
+              className="cursor-pointer text-[11px] text-gray-500 hover:text-red-400 transition px-2.5 py-1.5 rounded-lg bg-glass hover:bg-glass-hover"
             >
               Logout
             </button>
