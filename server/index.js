@@ -1,32 +1,61 @@
 import express from "express"
 import dotenv from "dotenv"
-import cors from "cors";  // Middleware for enabling CORS (Cross-Origin Resource Sharing)
-
+import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 import { connectDB } from "./db/db.js";
 import router from "./routes/index.js";
+import { setupSocket } from "./socket/socket.js";
+import { logger } from "./config/logger.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
-// Load environment variables from .env file
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 9000;
 
-// Middleware
-app.use(cors()); // Enable CORS for all origins
+app.use(cors());
 app.use(express.json());
 
-// Routes 
-app.use("/api",router);
+app.use("/api", router);
 
-app.get("/",(req,res) => {
+app.get("/", (req, res) => {
     res.send("Hello, World!!")
 })
 
-// Connect to MongoDB & running the server
-connectDB().
-then(() => {
-    app.listen(PORT,() => {
-    console.log(`Server running on port ${PORT}`)  
-    })
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+const server = createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*", methods: ["GET", "POST"] },
+});
+
+setupSocket(io);
+
+connectDB()
+.then(() => {
+    server.listen(PORT, () => {
+        logger.info({ port: PORT }, "Server started");
+    });
 })
+.catch((err) => {
+    logger.fatal({ err }, "Failed to connect to database");
+    process.exit(1);
+});
+
+function gracefulShutdown(signal) {
+    logger.info({ signal }, "Shutting down gracefully");
+    server.close(() => {
+        logger.info("Server closed");
+        process.exit(0);
+    });
+    setTimeout(() => {
+        logger.error("Forced shutdown after timeout");
+        process.exit(1);
+    }, 10000);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

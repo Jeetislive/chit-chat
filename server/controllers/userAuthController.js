@@ -23,11 +23,6 @@ export const signUp = async(req,res) => {
         // HASH PASSWORD HERE
             const hashedPassword = await bcrypt.hash(password, 10);
 
-        // https://avatar-placeholder.iran.liara.run/
-
-        const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
-        const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
-
         // Create new user
         const newUser = new User({
             name,
@@ -36,7 +31,6 @@ export const signUp = async(req,res) => {
             password: hashedPassword,
             phone,
             gender,
-            profilePic: gender === "male" ? boyProfilePic : girlProfilePic,
         });
 
         // Save user to database
@@ -48,7 +42,7 @@ export const signUp = async(req,res) => {
             res.status(201).json({
                 token,
                 _id: newUser._id,
-                fullName: newUser.fullName,
+                fullName: newUser.name,
                 username: newUser.username,
                 profilePic: newUser.profilePic,
             });
@@ -92,6 +86,51 @@ export const logIn = async(req,res) => {
             profilePic: user.profilePic,
         });
     }catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+export const getProfile = async(req,res) => {
+    try {
+        const user = await User.findById(req.user._id).select("-password");
+        if (!user) return res.status(404).json({ error: "User not found" });
+        res.json({
+            _id: user._id,
+            name: user.name,
+            username: user.username,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+            profilePic: user.profilePic,
+            createdAt: user.createdAt,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+export const updateProfile = async(req,res) => {
+    try {
+        const { name, email, phone, gender } = req.body;
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ error: "User not found" });
+        if (name) user.name = name;
+        if (email) user.email = email;
+        if (phone) user.phone = phone;
+        if (gender) user.gender = gender;
+        await user.save();
+        res.json({
+            _id: user._id,
+            name: user.name,
+            username: user.username,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+            profilePic: user.profilePic,
+        });
+    } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Server error" });
     }

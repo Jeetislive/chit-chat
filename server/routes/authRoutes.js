@@ -1,18 +1,15 @@
 import express from "express"
-import { logIn, logOut, signUp } from "../controllers/userAuthController.js";
+import { protectRoutes } from "../middleware/protectRoutes.js";
+import { validate } from "../middleware/validate.js";
+import { signupSchema, loginSchema, updateProfileSchema } from "../validators/auth.validator.js";
+import * as authController from "../controllers/auth.controller.js";
 
+const router = express.Router();
 
-const authRoute = express.Router();
+router.post("/signup", validate(signupSchema), authController.signup);
+router.post("/login", validate(loginSchema), authController.login);
+router.post("/logout", authController.logout);
+router.get("/profile", protectRoutes, authController.getProfile);
+router.put("/profile", protectRoutes, validate(updateProfileSchema), authController.updateProfile);
 
-authRoute.post("/signup",signUp);
-
-authRoute.post("/login",logIn);
-
-authRoute.get("/profile", (req, res) => {
-    // Get user's profile based on JWT
-    res.send("Retrieving user profile");
-});
-
-authRoute.post("/logout", logOut);
-
-export default authRoute;
+export default router;
