@@ -14,7 +14,10 @@ function getTransport() {
         secure: process.env.SMTP_SECURE === "true",
         requireTLS: true,
         lookup: (hostname, options, cb) => {
-            dns.lookup(hostname, { ...options, family: 4 }, cb);
+            dns.resolve4(hostname, (err, addresses) => {
+                if (err || !addresses?.length) return cb(err, null, null);
+                cb(null, addresses[0], 4);
+            });
         },
         auth: {
             user: SMTP_USER,
