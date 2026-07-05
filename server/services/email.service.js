@@ -2,17 +2,18 @@ import nodemailer from "nodemailer";
 import { logger } from "../config/logger.js";
 
 function getTransport() {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || process.env.EMAIL_USER === "your-email@gmail.com") {
+    const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
         return null;
     }
 
     return nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
+        host: SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587", 10),
+        secure: process.env.SMTP_SECURE === "true",
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            user: SMTP_USER,
+            pass: SMTP_PASS,
         },
     });
 }
@@ -27,7 +28,7 @@ async function sendMail(to, subject, html) {
 
     try {
         await transporter.sendMail({
-            from: `"Chat App" <${process.env.EMAIL_USER}>`,
+            from: `"Chat App" <${process.env.SMTP_USER}>`,
             to,
             subject,
             html,
