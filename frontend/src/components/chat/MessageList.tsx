@@ -17,6 +17,11 @@ interface MessageListProps {
   loadingMore?: boolean;
 }
 
+function replyContent(msg: Message): string {
+  if (msg.isDeleted) return "This message was deleted";
+  return msg.content;
+}
+
 function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete, onLoadMore, hasMore, loadingMore }: MessageListProps) {
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,7 +143,7 @@ function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete,
                   {replyMsg && (
                     <div className="mb-1.5 pl-2 border-l-2 border-white/20 text-xs text-gray-400">
                       <p className="font-medium text-indigo-400">Replying</p>
-                      <p className="truncate max-w-[200px]">{replyMsg.isDeleted ? "This message was deleted" : replyMsg.content}</p>
+                      <p className="truncate max-w-[200px]">{replyContent(replyMsg)}</p>
                     </div>
                   )}
                   {msg.isDeleted ? (

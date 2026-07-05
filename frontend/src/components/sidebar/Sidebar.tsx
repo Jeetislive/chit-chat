@@ -35,7 +35,7 @@ function Sidebar({ selectedUser, onSelectUser }: SidebarProps) {
 
   return (
     <>
-      <aside className="w-80 flex flex-col flex-shrink-0 border-r border-glass">
+      <aside className="w-80 flex flex-col flex-shrink-0 border-r border-glass" style={{ background: "var(--sidebar-bg)", borderColor: "var(--sidebar-border)" }}>
         <div className="p-4 border-b border-glass">
           <div className="flex items-center gap-3 mb-3">
             <button onClick={() => setShowProfile(true)} className="relative shrink-0">
@@ -144,10 +144,21 @@ const ConversationCard = memo(function ConversationCard({ conv, isSelected, isTy
           <p className="text-sm font-medium text-white truncate">{conv.user.name}</p>
           {conv.lastMessage && (
             <p className="text-[10px] text-gray-500 shrink-0">
-              {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {(() => {
+                const d = new Date(conv.lastMessage.createdAt);
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                if (msgDate.getTime() === today.getTime()) {
+                  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                } else if (msgDate.getTime() === yesterday.getTime()) {
+                  return "Yesterday";
+                } else {
+                  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+                }
+              })()}
             </p>
           )}
         </div>

@@ -11,6 +11,8 @@ import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import Avatar from "@/components/shared/Avatar";
 import Skeleton from "@/components/shared/Skeleton";
+import { decryptMessage, getCachedPublicKey, cachePublicKey, getSentPlaintext } from "@/lib/crypto";
+import { userApi } from "@/lib/api";
 import type { User, Message } from "@/types";
 
 interface ChatAreaProps {
@@ -30,8 +32,33 @@ function ChatArea({ selectedUser }: ChatAreaProps) {
   }, [sendMessage]);
 
   const handleReply = useCallback((msg: Message) => {
-    setReplyTo(msg);
-  }, []);
+    let displayMsg = msg;
+    if (msg.encrypted && msg.nonce) {
+      const stored = getSentPlaintext(msg._id);
+      if (stored) {
+        displayMsg = { ...msg, content: stored };
+      } else if (selectedUser && msg.sender !== user?._id) {
+        const pubKey = getCachedPublicKey(selectedUser._id);
+        if (pubKey) {
+          const decrypted = decryptMessage(msg.content, msg.nonce, pubKey);
+          if (decrypted) {
+            displayMsg = { ...msg, content: decrypted };
+          }
+        } else {
+          userApi.getPublicKey(selectedUser._id).then(({ publicKey }) => {
+            if (publicKey) {
+              cachePublicKey(selectedUser._id, publicKey);
+              const decrypted = decryptMessage(msg.content, msg.nonce!, publicKey);
+              if (decrypted) {
+                setReplyTo({ ...msg, content: decrypted });
+              }
+            }
+          });
+        }
+      }
+    }
+    setReplyTo(displayMsg);
+  }, [selectedUser, user?._id]);
 
   const handleCancelReply = useCallback(() => {
     setReplyTo(null);

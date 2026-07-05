@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { authApi, userApi } from "@/lib/api";
-import { generateAndStoreKeyPair, getMyPublicKey, clearKeys } from "@/lib/crypto";
+import { generateAndStoreKeyPair, getMyPublicKey, clearKeys, clearSentPlaintexts } from "@/lib/crypto";
 import type { User, AuthContextValue } from "@/types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     clearKeys();
+    clearSentPlaintexts();
     setUser(null);
   }, []);
 

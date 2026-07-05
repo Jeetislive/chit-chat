@@ -62,17 +62,7 @@ export function useConversations(selectedUser: User | null) {
       );
     };
 
-    const handleMessageDeleted = ({ sender, receiver }: { sender: string; receiver: string }) => {
-      if (!user) return;
-      const otherId = sender === user._id ? receiver : sender;
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.user._id === otherId && c.lastMessage
-            ? { ...c, lastMessage: { ...c.lastMessage, content: "This message was deleted" } }
-            : c
-        )
-      );
-    };
+    const handleMessageDeleted = () => {};
 
     socket.on("newMessage", handleNewMessage);
     socket.on("messagesRead", handleMessagesRead);
