@@ -34,7 +34,7 @@ function requestTimeout(ms) {
     };
 }
 
-app.use(requestTimeout(30000));
+app.use(requestTimeout(60000));
 
 app.use("/api", router);
 
