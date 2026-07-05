@@ -3,6 +3,7 @@
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMessages } from "@/hooks/useMessages";
+import { useConversations } from "@/hooks/useConversations";
 import { useTyping } from "@/hooks/useTyping";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
@@ -17,15 +18,18 @@ import type { User, Message } from "@/types";
 
 interface ChatAreaProps {
   selectedUser: User | null;
+  onClearChat?: () => void;
 }
 
-function ChatArea({ selectedUser }: ChatAreaProps) {
+function ChatArea({ selectedUser, onClearChat }: ChatAreaProps) {
   const { user } = useAuth();
   const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, deleteMessage } = useMessages(selectedUser);
+  const { clearChat } = useConversations(selectedUser);
   const { isTyping, emitTyping } = useTyping(selectedUser);
   const [showProfile, setShowProfile] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Message | null>(null);
+  const [clearTarget, setClearTarget] = useState(false);
 
   const handleSend = useCallback((text: string, replyToId?: string) => {
     sendMessage(text, replyToId);
@@ -75,6 +79,17 @@ function ChatArea({ selectedUser }: ChatAreaProps) {
     }
   }, [deleteTarget, deleteMessage]);
 
+  const confirmClear = useCallback(async () => {
+    if (!selectedUser) return;
+    try {
+      await clearChat(selectedUser._id);
+      setClearTarget(false);
+      onClearChat?.();
+    } catch {
+      alert("Failed to clear conversation");
+    }
+  }, [selectedUser, clearChat, onClearChat]);
+
   if (!selectedUser) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center">
@@ -111,6 +126,13 @@ function ChatArea({ selectedUser }: ChatAreaProps) {
             className="text-xs text-gray-500 hover:text-indigo-400 transition px-3 py-1.5 rounded-lg bg-glass hover:bg-glass-hover"
           >
             View Profile
+          </button>
+          <button
+            onClick={() => setClearTarget(true)}
+            aria-label="Clear chat"
+            className="text-xs text-gray-500 hover:text-red-400 transition px-3 py-1.5 rounded-lg bg-glass hover:bg-red-500/10"
+          >
+            Clear Chat
           </button>
         </div>
 
@@ -166,6 +188,18 @@ function ChatArea({ selectedUser }: ChatAreaProps) {
           cancelLabel="Cancel"
           onConfirm={confirmDelete}
           onCancel={() => setDeleteTarget(null)}
+          destructive
+        />
+      )}
+
+      {clearTarget && (
+        <ConfirmDialog
+          title="Clear chat"
+          message="This action cannot be undone. All messages will be permanently deleted."
+          confirmLabel="Clear"
+          cancelLabel="Cancel"
+          onConfirm={confirmClear}
+          onCancel={() => setClearTarget(false)}
           destructive
         />
       )}

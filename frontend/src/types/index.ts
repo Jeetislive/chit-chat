@@ -57,6 +57,7 @@ export interface SocketContextValue {
   socket: import("socket.io-client").Socket | null;
   onlineUsers: string[];
   typingUsers: string[];
+  isConnected: boolean;
 }
 
 export interface SendMessageResponse {

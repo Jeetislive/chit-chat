@@ -14,6 +14,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
     if (!user?._id) {
@@ -23,12 +24,17 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       }
       setOnlineUsers([]);
       setTypingUsers([]);
+      setIsConnected(true);
       return;
     }
 
     const newSocket = io(SOCKET_URL, {
       query: { userId: user._id },
     });
+
+    newSocket.on("connect", () => setIsConnected(true));
+    newSocket.on("disconnect", () => setIsConnected(false));
+    newSocket.on("connect_error", () => setIsConnected(false));
 
     newSocket.on("onlineUsers", (users: string[]) => {
       setOnlineUsers(users);
@@ -43,10 +49,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       setTypingUsers((prev) => prev.filter((id) => id !== senderId));
     });
 
-    newSocket.on("connect_error", (err: Error) => {
-      console.error("Socket connection error:", err.message);
-    });
-
     setSocket(newSocket);
 
     return () => {
@@ -54,8 +56,19 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     };
   }, [user?._id]);
 
+  useEffect(() => {
+    const handleOffline = () => setIsConnected(false);
+    const handleOnline = () => setIsConnected(true);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
   return (
-    <SocketContext.Provider value={{ socket, onlineUsers, typingUsers }}>
+    <SocketContext.Provider value={{ socket, onlineUsers, typingUsers, isConnected }}>
       {children}
     </SocketContext.Provider>
   );

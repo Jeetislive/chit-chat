@@ -46,7 +46,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   const res = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
 
-  if (res.status === 401 && !endpoint.includes("/auth/refresh")) {
+  const isAuthEndpoint = endpoint === "/auth/login" || endpoint === "/auth/signup";
+
+  if (res.status === 401 && !endpoint.includes("/auth/refresh") && !isAuthEndpoint) {
     if (!isRefreshing) {
       isRefreshing = true;
       refreshPromise = refreshAccessToken().finally(() => {
@@ -106,4 +108,6 @@ export const messageApi = {
     request<SendMessageResponse>(`/messages/send/${userId}`, { method: "POST", body: JSON.stringify(body) }),
   deleteMessage: (messageId: string) =>
     request<void>(`/messages/${messageId}`, { method: "DELETE" }),
+  clearConversation: (userId: string) =>
+    request<{ deletedCount: number; hadConversation: boolean }>(`/messages/conversation/${userId}`, { method: "DELETE" }),
 };

@@ -59,6 +59,21 @@ export async function getConversationMessages(userId, otherUserId, page = 1, lim
     };
 }
 
+export async function clearConversation(userId, otherUserId) {
+    const conversation = await Conversation.findOneAndDelete({
+        participants: { $all: [userId, otherUserId] },
+    });
+
+    const result = await Message.deleteMany({
+        $or: [
+            { sender: userId, receiver: otherUserId },
+            { sender: otherUserId, receiver: userId },
+        ],
+    });
+
+    return { deletedCount: result.deletedCount, hadConversation: !!conversation };
+}
+
 export async function deleteMessage(messageId, userId) {
     const message = await Message.findOne({ _id: messageId, sender: userId });
     if (!message) throw new NotFoundError("Message not found");

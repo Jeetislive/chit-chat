@@ -26,8 +26,10 @@ function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete,
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const prevConversationId = useRef<string | null>(null);
   const prevLength = useRef(0);
-  const isFirstLoad = useRef(true);
+
+  const conversationId = messages[0]?._id ?? null;
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current || !onLoadMore || !hasMore || loadingMore) return;
@@ -37,8 +39,11 @@ function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete,
   }, [onLoadMore, hasMore, loadingMore]);
 
   useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
+    if (messages.length === 0) return;
+
+    if (conversationId && conversationId !== prevConversationId.current) {
+      prevConversationId.current = conversationId;
+      prevLength.current = messages.length;
       bottomRef.current?.scrollIntoView();
       return;
     }
@@ -47,24 +52,20 @@ function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete,
     const len = messages.length;
 
     if (len > prevLength.current) {
-      const isNewMessage = messages[len - 1]?._id !== (prevLength.current > 0 ? messages[prevLength.current - 1]?._id : null);
+      const newLastId = messages[len - 1]?._id;
+      const oldLastId = prevLength.current > 0 ? messages[prevLength.current - 1]?._id : null;
+      const isNewMessage = newLastId !== oldLastId;
+
       if (isNewMessage && container) {
         const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
         if (atBottom) {
           bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         }
       }
-      if (len > prevLength.current && prevLength.current > 0 && !isNewMessage) {
-        const newMsg = messages[len - 1];
-        const oldLast = prevLength.current > 0 ? messages[prevLength.current - 1] : null;
-        if (newMsg?._id === oldLast?._id && container) {
-          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
-      }
     }
 
     prevLength.current = len;
-  }, [messages]);
+  }, [messages, conversationId]);
 
   const handleReplyClick = (msg: Message) => {
     if (msg.isDeleted) return;
@@ -161,18 +162,18 @@ function MessageList({ messages, otherUserPic, otherUserName, onReply, onDelete,
                     </div>
                   )}
                 </div>
-                {isMine && !msg.isDeleted && onDelete && (
-                  <div className="hidden group-hover:flex justify-end mt-0.5">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onDelete(msg); }}
-                      aria-label="Delete message"
-                      className="text-[10px] text-gray-500 hover:text-red-400 transition px-2 py-0.5 rounded bg-glass hover:bg-red-500/10"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
               </div>
+              {isMine && !msg.isDeleted && onDelete && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(msg); }}
+                  aria-label="Delete message"
+                  className="hidden group-hover:flex items-center justify-center w-7 h-7 rounded-full text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition shrink-0"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              )}
             </div>
           );
         })
