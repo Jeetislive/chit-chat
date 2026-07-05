@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
 import { logger } from "../config/logger.js";
 
 function getTransport() {
@@ -12,8 +13,8 @@ function getTransport() {
         port: parseInt(process.env.SMTP_PORT || "587", 10),
         secure: process.env.SMTP_SECURE === "true",
         requireTLS: true,
-        tls: {
-            servername: SMTP_HOST,
+        lookup: (hostname, options, cb) => {
+            dns.lookup(hostname, { ...options, family: 4 }, cb);
         },
         auth: {
             user: SMTP_USER,
