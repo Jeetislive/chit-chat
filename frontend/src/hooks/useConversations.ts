@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { conversationApi } from "@/lib/api";
+import { conversationApi, messageApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import type { Conversation, Message, User } from "@/types";
@@ -64,16 +64,25 @@ export function useConversations(selectedUser: User | null) {
 
     const handleMessageDeleted = () => {};
 
+    const handleConversationCleared = ({ byUserId }: { byUserId: string }) => {
+      if (!user) return;
+      const removedId = byUserId === user._id ? "" : byUserId;
+      setConversations((prev) => prev.filter((c) => c.user._id !== removedId));
+      fetchConversations();
+    };
+
     socket.on("newMessage", handleNewMessage);
     socket.on("messagesRead", handleMessagesRead);
     socket.on("messageDeleted", handleMessageDeleted);
+    socket.on("conversationCleared", handleConversationCleared);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("messagesRead", handleMessagesRead);
       socket.off("messageDeleted", handleMessageDeleted);
+      socket.off("conversationCleared", handleConversationCleared);
     };
-  }, [socket, user?._id, selectedUser]);
+  }, [socket, user?._id, selectedUser, fetchConversations]);
 
   const markAsRead = useCallback((conv: Conversation) => {
     if (conv.unreadCount > 0 && socket) {
@@ -86,7 +95,12 @@ export function useConversations(selectedUser: User | null) {
     );
   }, [socket]);
 
+  const clearChat = useCallback(async (otherUserId: string) => {
+    await messageApi.clearConversation(otherUserId);
+    setConversations((prev) => prev.filter((c) => c.user._id !== otherUserId));
+  }, []);
+
   const filtered = conversations.filter((c) => c.user);
 
-  return { conversations: filtered, loading, markAsRead, typingUsers };
+  return { conversations: filtered, loading, markAsRead, typingUsers, clearChat };
 }

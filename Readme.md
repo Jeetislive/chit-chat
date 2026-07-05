@@ -117,8 +117,6 @@ npm run dev             # starts on port 3000
 | `DB_NAME` | Database name |
 | `JWT_SECRET` | Access token signing secret |
 | `JWT_REFRESH_SECRET` | Refresh token signing secret |
-| `VAPID_PUBLIC_KEY` | Web Push public key |
-| `VAPID_PRIVATE_KEY` | Web Push private key |
 | `EMAIL_USER` | Gmail address for sending emails |
 | `EMAIL_PASS` | Gmail app password |
 
@@ -127,4 +125,3 @@ npm run dev             # starts on port 3000
 |----------|-------------|
 | `NEXT_PUBLIC_API_URL` | Backend API URL |
 | `NEXT_PUBLIC_SOCKET_URL` | WebSocket server URL |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push public key (browser) |

@@ -31,6 +31,21 @@ export const getConversationMessages = asyncHandler(async (req, res) => {
     res.json(result);
 });
 
+export const clearConversation = asyncHandler(async (req, res) => {
+    const { id: otherUserId } = req.params;
+    const result = await messageService.clearConversation(req.user._id, otherUserId);
+
+    const io = getIO();
+    const receiverSocketId = getReceiverSocketId(otherUserId);
+    if (receiverSocketId) {
+        io.to(receiverSocketId).emit("conversationCleared", {
+            byUserId: req.user._id,
+        });
+    }
+
+    res.json(result);
+});
+
 export const deleteMessage = asyncHandler(async (req, res) => {
     const { messageId } = req.params;
     const deleted = await messageService.deleteMessage(messageId, req.user._id);

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
@@ -19,13 +20,12 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.3",
     "nodemailer": "^9.0.3",
-    "nodemon": "^3.1.7",
     "pino": "^10.3.1",
-    "server": "file:",
     "socket.io": "^4.8.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "nodemon": "^3.1.7",
     "pino-pretty": "^13.1.3"
   }
 }

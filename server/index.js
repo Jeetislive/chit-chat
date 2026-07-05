@@ -16,9 +16,25 @@ dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 9000;
 
-app.use(cors());
+app.set("trust proxy", 1);
+
+const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+app.use(cors({ origin: clientUrl }));
 app.use(express.json({ limit: "1mb" }));
 app.use(sanitizeInput);
+
+function requestTimeout(ms) {
+    return (req, res, next) => {
+        const timer = setTimeout(() => {
+            logger.warn({ method: req.method, path: req.path, ip: req.ip }, "Request timeout");
+            res.status(408).json({ error: "Request timeout" });
+        }, ms);
+        res.on("finish", () => clearTimeout(timer));
+        next();
+    };
+}
+
+app.use(requestTimeout(30000));
 
 app.use("/api", router);
 
@@ -31,7 +47,7 @@ app.use(errorHandler);
 
 const server = createServer(app);
 const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] },
+    cors: { origin: clientUrl, methods: ["GET", "POST"] },
 });
 
 setupSocket(io);
