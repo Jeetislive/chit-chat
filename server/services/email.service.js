@@ -11,6 +11,10 @@ function getTransport() {
         host: SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || "587", 10),
         secure: process.env.SMTP_SECURE === "true",
+        requireTLS: true,
+        tls: {
+            servername: SMTP_HOST,
+        },
         auth: {
             user: SMTP_USER,
             pass: SMTP_PASS,
