@@ -12,6 +12,7 @@ export async function getConversations(userId) {
                 { sender: userId, receiver: otherUser._id },
                 { sender: otherUser._id, receiver: userId },
             ],
+            isDeleted: { $ne: true },
         })
             .sort({ createdAt: -1 })
             .limit(1)

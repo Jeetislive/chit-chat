@@ -4,23 +4,52 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { messageApi, userApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { encryptMessage, decryptMessage, cachePublicKey, getCachedPublicKey } from "@/lib/crypto";
+import { encryptMessage, decryptMessage, cachePublicKey, getCachedPublicKey, getMyPublicKey, saveSentPlaintext, getSentPlaintext } from "@/lib/crypto";
 import type { Message, User } from "@/types";
 
 const PAGE_SIZE = 50;
 
-function decryptMsg(msg: Message, senderPubKey: string): Message {
-  if (!msg.encrypted || !msg.nonce || !senderPubKey) return msg;
-  const decrypted = decryptMessage(msg.content, msg.nonce, senderPubKey);
-  if (!decrypted) return { ...msg, content: "🔒 Encrypted message" };
+function decryptMsg(
+  msg: Message,
+  getPubKey: (userId: string) => string | undefined,
+  getPlaintext?: (messageId: string) => string | null
+): Message {
+  if (!msg.encrypted || !msg.nonce) return msg;
 
-  const result = { ...msg, content: decrypted };
+  let result: Message;
+
+  const stored = getPlaintext?.(msg._id);
+  if (stored) {
+    result = { ...msg, content: stored };
+  } else {
+    const senderPubKey = getPubKey(msg.sender);
+    if (!senderPubKey) return { ...msg, content: "🔒 Encrypted message" };
+
+    const decrypted = decryptMessage(msg.content, msg.nonce, senderPubKey);
+    if (!decrypted) return { ...msg, content: "🔒 Encrypted message" };
+
+    result = { ...msg, content: decrypted };
+  }
 
   if (result.replyTo && typeof result.replyTo === "object" && (result.replyTo as Message).encrypted) {
     const reply = result.replyTo as Message;
-    const replyDecrypted = decryptMessage(reply.content, reply.nonce!, senderPubKey);
-    if (replyDecrypted) {
-      result.replyTo = { ...reply, content: replyDecrypted };
+    const replyStored = getPlaintext?.(reply._id);
+    if (replyStored) {
+      result.replyTo = { ...reply, content: replyStored };
+    } else {
+      const replyKey = getPubKey(reply.sender);
+      if (replyKey) {
+        const replyDecrypted = decryptMessage(reply.content, reply.nonce!, replyKey);
+        if (replyDecrypted) {
+          result.replyTo = { ...reply, content: replyDecrypted };
+        }
+      }
+      if (!replyKey || (result.replyTo as Message).content === reply.content) {
+        const retryStored = getPlaintext?.(reply._id);
+        if (retryStored) {
+          result.replyTo = { ...reply, content: retryStored };
+        }
+      }
     }
   }
 
@@ -36,7 +65,6 @@ export function useMessages(selectedUser: User | null) {
   const [hasMore, setHasMore] = useState(true);
   const currentPage = useRef(1);
   const selectedUserId = useRef<string | null>(null);
-  const sentPlaintexts = useRef<Map<string, string>>(new Map());
 
   const ensurePublicKey = useCallback(async (userId: string): Promise<string | null> => {
     const cached = getCachedPublicKey(userId);
@@ -53,9 +81,16 @@ export function useMessages(selectedUser: User | null) {
 
   const decryptMessages = useCallback((msgs: Message[], otherUserId: string): Message[] => {
     const pubKey = getCachedPublicKey(otherUserId);
-    if (!pubKey) return msgs;
-    return msgs.map((m) => decryptMsg(m, pubKey));
-  }, []);
+    return msgs.map((m) =>
+      decryptMsg(m,
+        (uid) => {
+          if (uid === user?._id) return undefined;
+          return pubKey || getCachedPublicKey(uid) || undefined;
+        },
+        getSentPlaintext
+      )
+    );
+  }, [user?._id]);
 
   const fetchMessages = useCallback(async (page: number) => {
     if (!selectedUser) return;
@@ -86,11 +121,11 @@ export function useMessages(selectedUser: User | null) {
       selectedUserId.current = selectedUser?._id || null;
       currentPage.current = 1;
       setHasMore(true);
-      sentPlaintexts.current.clear();
       if (selectedUser) {
-        ensurePublicKey(selectedUser._id);
+        ensurePublicKey(selectedUser._id).then(() => fetchMessages(1));
+      } else {
+        fetchMessages(1);
       }
-      fetchMessages(1);
     }
   }, [selectedUser, fetchMessages, ensurePublicKey]);
 
@@ -113,19 +148,27 @@ export function useMessages(selectedUser: User | null) {
       let displayMsg = msg;
 
       if (msg.encrypted) {
-        const storedPlaintext = sentPlaintexts.current.get(msg._id);
+        const storedPlaintext = getSentPlaintext(msg._id);
         if (storedPlaintext) {
           displayMsg = { ...msg, content: storedPlaintext };
-          sentPlaintexts.current.delete(msg._id);
         } else {
           const pubKey = getCachedPublicKey(selectedUser._id);
-          if (pubKey) {
-            displayMsg = decryptMsg(msg, pubKey);
-          } else {
+          const myPubKey = getMyPublicKey();
+          const getKey = (uid: string) => {
+            if (uid === user._id) return myPubKey || undefined;
+            return pubKey || getCachedPublicKey(uid) || undefined;
+          };
+          displayMsg = decryptMsg(msg, getKey, getSentPlaintext);
+          if (displayMsg.content === "🔒 Encrypted message") {
             ensurePublicKey(selectedUser._id).then((pk) => {
               if (pk) {
+                cachePublicKey(selectedUser._id, pk);
+                const betterGetKey = (uid: string) => {
+                  if (uid === user._id) return myPubKey || undefined;
+                  return getCachedPublicKey(uid) || undefined;
+                };
                 setMessages((prev) =>
-                  prev.map((m) => (m._id === msg._id ? decryptMsg(msg, pk) : m))
+                  prev.map((m) => (m._id === msg._id ? decryptMsg(msg, betterGetKey, getSentPlaintext) : m))
                 );
               }
             });
@@ -192,10 +235,22 @@ export function useMessages(selectedUser: User | null) {
           encrypted: true,
           replyTo,
         });
-        sentPlaintexts.current.set(data.newMessage._id, text);
+        saveSentPlaintext(data.newMessage._id, text);
+        const otherPubKey = getCachedPublicKey(selectedUser._id);
+        const myPubKey = getMyPublicKey();
+        const processed = decryptMsg(data.newMessage,
+          (uid) => {
+            if (uid === user?._id) return myPubKey || undefined;
+            return otherPubKey || getCachedPublicKey(uid) || undefined;
+          },
+          (mid) => {
+            if (mid === data.newMessage._id) return text;
+            return getSentPlaintext(mid);
+          }
+        );
         setMessages((prev) => {
-          if (prev.some((m) => m._id === data.newMessage._id)) return prev;
-          return [...prev, { ...data.newMessage, content: text }];
+          if (prev.some((m) => m._id === processed._id)) return prev;
+          return [...prev, processed];
         });
       } else {
         const data = await messageApi.sendMessage(selectedUser._id, {
@@ -212,7 +267,7 @@ export function useMessages(selectedUser: User | null) {
       const message = err instanceof Error ? err.message : "Failed to send";
       alert(message);
     }
-  }, [selectedUser, ensurePublicKey]);
+  }, [selectedUser, ensurePublicKey, user?._id]);
 
   const deleteMessage = useCallback(async (messageId: string) => {
     try {

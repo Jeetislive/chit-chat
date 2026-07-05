@@ -74,3 +74,26 @@ export function clearKeys(): void {
   localStorage.removeItem(PUBLIC_KEY_STORAGE);
   publicKeyCache.clear();
 }
+
+const SENT_PLAINTEXTS_KEY = "e2e_sent_plaintexts";
+
+export function saveSentPlaintext(messageId: string, plaintext: string): void {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SENT_PLAINTEXTS_KEY) || "{}");
+    stored[messageId] = plaintext;
+    localStorage.setItem(SENT_PLAINTEXTS_KEY, JSON.stringify(stored));
+  } catch {}
+}
+
+export function getSentPlaintext(messageId: string): string | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SENT_PLAINTEXTS_KEY) || "{}");
+    return stored[messageId] || null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSentPlaintexts(): void {
+  localStorage.removeItem(SENT_PLAINTEXTS_KEY);
+}
