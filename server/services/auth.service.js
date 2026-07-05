@@ -94,7 +94,7 @@ export async function forgotPassword(email) {
     user.resetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendResetCodeEmail(email, user.name, code);
+    sendResetCodeEmail(email, user.name, code);
 }
 
 export async function verifyResetCode(email, code) {
